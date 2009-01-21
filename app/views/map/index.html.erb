@@ -1,0 +1,229 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <link rel="stylesheet" href="stylesheets/style.css" />
+  <script src="http://openlayers.org/api/2.7-rc2/OpenLayers.js"></script>
+  <script type="text/javascript">
+      var map, layer, parser, result, end_geometry, stop_point, gml;
+      var active = 0;
+      SinglePoint = OpenLayers.Class(OpenLayers.Handler.Point, {
+          createFeature: function(evt) {
+              this.control.layer.removeFeatures(this.control.layer.features);
+              OpenLayers.Handler.Point.prototype.createFeature.apply(this, arguments);
+          },
+          mousemove: function(evt) {
+              if(this.drawing) {
+                  this.callback("move", [this.point.geometry]);
+                  var lonlat = this.map.getLonLatFromPixel(evt.xy);
+                  this.point.geometry.x = lonlat.lon;
+                  this.point.geometry.y = lonlat.lat;
+                  this.point.geometry.clearBounds();
+                  this.drawFeature();
+              }
+              return true;
+          }    
+      });
+
+      var start_style = {
+          externalGraphic: "images/start.png",
+          graphicWidth: 18,
+          graphicHeight: 26,
+          graphicYOffset: -26,
+          graphicOpacity: 1
+      }
+      OpenLayers.Util.applyDefaults(start_style, OpenLayers.Feature.Vector.style['default']);
+
+      var stop_style = {
+          externalGraphic: "images/stop.png",
+          graphicWidth: 18,
+          graphicHeight: 26,
+          graphicYOffset: -26,
+          graphicOpacity: 1
+      }
+      OpenLayers.Util.applyDefaults(stop_style, OpenLayers.Feature.Vector.style['default']);
+
+       var result_style = {
+           strokeWidth: 3,
+           strokeColor: "#ff0000",
+           fillOpacity: 0
+       }; 
+       OpenLayers.Util.applyDefaults(result_style, OpenLayers.Feature.Vector.style['default']);
+
+      function style_osm_feature(feature) {
+    	  feature.style = OpenLayers.Util.extend({'fill':'black'}, 
+    	    OpenLayers.Feature.Vector.style['default']);
+    	  if (feature.attributes.highway == "motorway") {
+    	    feature.style.strokeColor = "blue";
+    	    feature.style.strokeWidth = 5;
+    	  } else if (feature.attributes.highway == "primary") {
+    	    feature.style.strokeColor = "red";
+    	  } else if (feature.attributes.highway == "secondary") {
+    	    feature.style.strokeColor = "orange";
+    	  } else if (feature.attributes.highway) {
+    	    feature.style.strokeColor = "black";
+      	  }
+      }
+
+      function init(){
+        // these should be object methods or something
+          parser = new OpenLayers.Format.WKT();
+          OpenLayers.ProxyHost = "proxy.cgi?url=";
+ 	        OpenLayers.Feature.Vector.style['default'].strokeWidth = 2;
+          OpenLayers.Feature.Vector.style['default'].cursor = 'pointer';
+
+          map = new OpenLayers.Map($('map'), 
+          {
+      			projection:"EPSG: 4326",
+      			'maxResolution': 360/512/16, 
+      			'numZoomLevels':15, 
+      			'controls': [],
+      			units: "m"
+	        }
+          );
+          map.addControl(new OpenLayers.Control.LayerSwitcher());
+
+	        layer = new OpenLayers.Layer.WMS( "OSM", 
+             [
+               "http://t1.hypercube.telascience.org/tiles?",
+               "http://t2.hypercube.telascience.org/tiles?",
+               "http://t3.hypercube.telascience.org/tiles?",
+               "http://t4.hypercube.telascience.org/tiles?"
+               ], 
+              {layers: 'osm-4326', format: 'image/png' } );
+          map.addLayer(layer);
+
+          map.addControl(new OpenLayers.Control.PanZoomBar());
+          map.addControl(new OpenLayers.Control.KeyboardDefaults());
+          map.addControl(new OpenLayers.Control.MouseDefaults());
+          map.addControl(new OpenLayers.Control.Permalink());
+
+          if (!map.getCenter()) { 
+	          gml = new OpenLayers.Layer.GML("OSM", "osm/gaza_strip.osm", 
+	            { format: OpenLayers.Format.OSM});
+	          map.zoomToExtent(new OpenLayers.Bounds( 34, 31, 35, 32 ));
+          } else {
+    	      if (map.getZoom() >= 11) {
+		          gml = new OpenLayers.Layer.GML("OSM", 
+		            "http://www.openstreetmap.org/api/0.5/map?bbox=" + map.getExtent().toBBOX(), 
+		            {format: OpenLayers.Format.OSM});
+	            } else {
+                gml = new OpenLayers.Layer.GML("OSM", "osm/gaza_strip.osm.coastline", 
+                  {format: OpenLayers.Format.OSM});
+	            }
+            }
+            map.addLayer(gml);
+            gml.preFeatureInsert = style_osm_feature;
+            
+            // create layers for start, stop, results
+            start = new OpenLayers.Layer.Vector("Start point", {style: start_style});
+            stop = new OpenLayers.Layer.Vector("End point", {style: stop_style});
+            result = new OpenLayers.Layer.Vector("Routing results"); 
+            map.addLayers([start, stop, result]);                                     
+            controls = {
+              start: new OpenLayers.Control.DrawFeature(start, SinglePoint),
+              stop: new OpenLayers.Control.DrawFeature(stop, SinglePoint, 
+                  {callbacks:{'move': compute}} )
+            }
+            for (var key in controls) {
+              map.addControl(controls[key]);
+            }
+      }
+
+      function displayRoute(response) {
+          if (response && response.responseText) {
+              // erase the previous results
+              result.removeFeatures(result.features);
+              var g = new OpenLayers.Format.GeoJSON();
+              result.addFeatures(g.read(response.responseText));
+          }
+          $("status").innerHTML = "Loaded.";
+          active = false;
+          // if (stopPoint.geometry != end_geometry) {
+          //     compute(end_geometry);
+          // }    
+      }
+
+      function toggleControl(element) {
+          for (key in controls) {
+              if (element.value == key && element.checked) {
+                  controls[key].activate();
+              } else {
+                  controls[key].deactivate();
+              }
+          }
+      }
+      
+      function compute(geometry) {
+          if (active) { end_geometry = geometry; }
+          if (!start.features.length || (!stop.features.length && !geometry) || active) { return; } 
+          $("status").innerHTML = "Loading...";
+          active = true; 
+          var startPoint = start.features[0];
+          stopPoint = geometry ?  
+                           new OpenLayers.Feature.Vector(geometry) :
+                           stop.features[0];  
+          var g = new OpenLayers.Format.GeoJSON();
+          //var data = g.write([startPoint, stopPoint]);
+	  // var url = "?startpoint="+startPoint.geometry.x+"%20"+startPoint.geometry.y+"&finalpoint="stopPoint.geometry.x+"%20"+stopPoint.geometry.y+"&method="+OpenLayers.Util.getElement('method').value;
+          var result = {    
+              startpoint: startPoint.geometry.x + ' ' + startPoint.geometry.y,
+              finalpoint: stopPoint.geometry.x + ' ' + stopPoint.geometry.y,              
+              method: OpenLayers.Util.getElement('method').value
+          };
+	  var url = "?"+OpenLayers.Util.getParameterString(result);
+          OpenLayers.loadURL("routing/route", 
+	  		     url,
+                             // OpenLayers.Util.getParameterString(result),
+                             null,
+                             displayRoute);
+      }
+
+  </script>
+</head>
+
+<body onload="init()">      
+<div id="map" style="float:left;width:65%;padding:10px;" ></div>
+
+<div id="right" style="float:right;width:30%;padding:10px;" >
+
+  <h1>Gaza Map: pgRouting + OpenLayers</h1>
+  <br />
+  <ol>
+    <li>Click "Set Start  Point"</li>
+    <li>Click on the map</li>
+    <li>Click "Set Stop Point"</li>
+    <li>Click on the Map, and without letting go, drag around.</li>
+
+  </ol> 
+  <div id="nodeList" style="font-weight:normal; margin-top:10px;"></div> 
+  <ul>
+    <li>
+      <input type="radio" name="control" id="noneToggle"
+             onclick="toggleControl(this);" checked="checked" />
+      <label for="noneToggle">navigate</label>
+    </li>
+    <li>
+      <input type="radio" name="control" value="start" id="startToggle"
+             onclick="toggleControl(this);" />
+
+      <label for="startToggle">set start point</label>
+    </li>
+    <li>
+      <input type="radio" name="control" value="stop" id="stopToggle"
+             onclick="toggleControl(this);" />
+      <label for="stopToggle">set stop point</label>
+    </li>
+  </ul>
+
+  <select id="method">
+    <option value="SPD">Shortest Path Dijkstra - undirected (BBox)</option>
+    <option value="SPA">Shortest Path A Star - undirected</option>
+    <option value="SPS">Shortest Path Shooting Star</option>
+  </select>
+  <button onclick="compute()">Calculate Route</button>
+  <div id="status" style="height:20px;min-height:20px;">&nbsp;</div>
+</div>
+
+</body>
+</html>
+
+
