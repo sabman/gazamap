@@ -2,7 +2,6 @@
 log/*.log
 db/schema.sql
 db/*.sqlite3
-db/development.sqlite3
 .DS_Store
 tmp/**/*
 doc/api
@@ -10,8 +9,6 @@ doc/app
 doc/plugins
 config/database.yml
 public/osm/*
-log/development.log
+log/*.log
 *~
 
-public/index.html
-vendor/*
