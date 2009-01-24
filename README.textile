@@ -1,19 +1,25 @@
-h1. Gaza Map for Routing
+h2. Gaza Map for Routing
 
-h2. Community Routing Service to provide Aid and Health Services to Gaza
+h3. Community Routing Service to provide Aid and Health Services to Gaza
+
 Due to the sad events of January 2009 a need for street data and an ambulance routing service was identified by NGOs and aid agencies. This application was developed for this purpose.   
 
-h2. How does Gaza Map work?
+h3. How does Gaza Map work?
+
 The service uses the most recent data snapshot from Open Street Map along with PostGIS, pgrouting and Ruby on Rails to create web service for routing
 
-h2. Using RESTful webservice    
+h4. Using RESTful webservice    
+
 Below are some of the ways you can use this webservice
 
-h3. GET new routes
+h4. GET new routes
+
 This is how you get a new route
 
-h3. POST a new ambulance 
+h4. POST a new ambulance 
+
 This is how you can enter data to identify you new ambulance
 
-h3. PUT to update your ambulance location 
+h4. PUT to update your ambulance location 
+
 To update you ambulance location you can use this webservice from a GSM or internet enabled GPS 
