@@ -1,5 +1,8 @@
 h1. Gaza Map for Routing
 
+The service is currently deployed at: "Gaza Map":http://gazamap.dyndns.org/map/
+
+
 h2. Community Routing Service to provide Aid and Health Services to Gaza
 
 Due to the sad events of January 2009 a need for street data and an ambulance routing service was identified by NGOs and aid agencies. This application was developed for this purpose.   
