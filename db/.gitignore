@@ -1,0 +1,3 @@
+schema.rb
+*.sqlite3
+.DS_Store
