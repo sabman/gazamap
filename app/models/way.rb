@@ -11,7 +11,7 @@ class Way < ActiveRecord::Base
 
 	when "SPD"     #  Shortest Path Dijkstra 
 
-	sql = "SELECT rt.gid, AsText(rt.the_geom) AS wkt,
+	sql = "SELECT rt.gid, AsText(transform(rt.the_geom, 900913)) AS wkt,
 	length(rt.the_geom) AS length, ways.gid 
 	FROM ways,
 	(SELECT gid, the_geom 
