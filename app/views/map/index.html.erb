@@ -112,18 +112,15 @@
       			
           map.addControl(new OpenLayers.Control.LayerSwitcher());
 
+          var osmarender = new OpenLayers.Layer.OSM.Osmarender("Osmarender");
+          map.addLayer(osmarender);
+
     			var layerMapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik");
     			map.addLayer(layerMapnik);
                                             
     			var lonLat = new OpenLayers.LonLat(lon, lat).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject());
     			map.setCenter (lonLat, zoom);
 
-
-          var osmarender = new OpenLayers.Layer.OSM.Osmarender("Osmarender", {
-             displayOutsideMaxExtent: true,
-             wrapDateLine: true
-          });
-          map.addLayer(osmarender);
                       
           // create layers for start, stop, results
           start = new OpenLayers.Layer.Vector("Start point", {style: start_style});
