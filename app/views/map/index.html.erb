@@ -167,23 +167,27 @@
           $("status").innerHTML = "Loading...";
           active = true; 
           var startPoint = start.features[0];
-          stopPoint = geometry ?  
-                           new OpenLayers.Feature.Vector(geometry) :
-                           stop.features[0];  
+          stopPoint = geometry ?  new OpenLayers.Feature.Vector(geometry) : stop.features[0];   
+
+      // Transform coords from projected to 4326:
+			var start_lonLat = new OpenLayers.LonLat(startPoint.geometry.x, startPoint.geometry.y).transform(
+			    new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+      
+			var end_lonLat = new OpenLayers.LonLat(stopPoint.geometry.x, stopPoint.geometry.y).transform(
+			    new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+          
           var g = new OpenLayers.Format.GeoJSON();
-          //var data = g.write([startPoint, stopPoint]);
-	  // var url = "?startpoint="+startPoint.geometry.x+"%20"+startPoint.geometry.y+"&finalpoint="stopPoint.geometry.x+"%20"+stopPoint.geometry.y+"&method="+OpenLayers.Util.getElement('method').value;
           var result = {    
-              startpoint: startPoint.geometry.x + ' ' + startPoint.geometry.y,
-              finalpoint: stopPoint.geometry.x + ' ' + stopPoint.geometry.y,              
+              startpoint: start_lonLat.lon + ' ' + start_lonLat.lat,
+              finalpoint: end_lonLat.lon + ' ' + end_lonLat.lat,              
               method: OpenLayers.Util.getElement('method').value
           };
-	  var url = "?"+OpenLayers.Util.getParameterString(result);
+	        var url = "?"+OpenLayers.Util.getParameterString(result);
+          // alert(url);
           OpenLayers.loadURL("routing/route", 
 	  		     url,
-                             // OpenLayers.Util.getParameterString(result),
-                             null,
-                             displayRoute);
+             null,
+             displayRoute);
       }
 
   </script>
