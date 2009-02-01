@@ -1,207 +1,195 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-  
   <link rel="stylesheet" href="stylesheets/style.css" />
-  
-  <!-- to always get the latest release of OpenLayers -->
-  <script src="http://openlayers.org/api/OpenLayers.js"></script>
-  <!-- bring in the OpenStreetMap OpenLayers layers.
-     Using this hosted file will make sure we are kept up
-     to date with any necessary changes -->
-  <script src="http://www.openstreetmap.org/openlayers/OpenStreetMap.js"></script>
+  <script src="http://openlayers.org/api/2.7-rc2/OpenLayers.js"></script>
+	<!-- bring in the OpenStreetMap OpenLayers layers.
+		 Using this hosted file will make sure we are kept up
+		 to date with any necessary changes -->
+	<script src="http://www.openstreetmap.org/openlayers/OpenStreetMap.js"></script>
+
 
   <script type="text/javascript">
-    var map, layer, parser, result, end_geometry, stop_point, gml;
-    var active = 0;
-    
-    SinglePoint = OpenLayers.Class(OpenLayers.Handler.Point, {
-        createFeature: function(evt) {
-          this.control.layer.removeFeatures(this.control.layer.features);
-          OpenLayers.Handler.Point.prototype.createFeature.apply(this, arguments);
-        },
-        mousemove: function(evt) {
-          if(this.drawing) {
-            this.callback("move", [this.point.geometry]);
-            var lonlat = this.map.getLonLatFromPixel(evt.xy);
-            this.point.geometry.x = lonlat.lon;
-            this.point.geometry.y = lonlat.lat;
-            this.point.geometry.clearBounds();
-            this.drawFeature();
+      var map, layer, parser, result, end_geometry, stop_point, gml;
+      var active = 0;
+      SinglePoint = OpenLayers.Class(OpenLayers.Handler.Point, {
+          createFeature: function(evt) {
+              this.control.layer.removeFeatures(this.control.layer.features);
+              OpenLayers.Handler.Point.prototype.createFeature.apply(this, arguments);
+          },
+          mousemove: function(evt) {
+              if(this.drawing) {
+                  this.callback("move", [this.point.geometry]);
+                  var lonlat = this.map.getLonLatFromPixel(evt.xy);
+                  this.point.geometry.x = lonlat.lon;
+                  this.point.geometry.y = lonlat.lat;
+                  this.point.geometry.clearBounds();
+                  this.drawFeature();
+              }
+              return true;
+          }    
+      });
+
+      var start_style = {
+          externalGraphic: "images/start.png",
+          graphicWidth: 18,
+          graphicHeight: 26,
+          graphicYOffset: -26,
+          graphicOpacity: 1
+      }
+      OpenLayers.Util.applyDefaults(start_style, OpenLayers.Feature.Vector.style['default']);
+
+      var stop_style = {
+          externalGraphic: "images/stop.png",
+          graphicWidth: 18,
+          graphicHeight: 26,
+          graphicYOffset: -26,
+          graphicOpacity: 1
+      }
+      OpenLayers.Util.applyDefaults(stop_style, OpenLayers.Feature.Vector.style['default']);
+
+       var result_style = {
+           strokeWidth: 3,
+           strokeColor: "#ff0000",
+           fillOpacity: 0
+       }; 
+       OpenLayers.Util.applyDefaults(result_style, OpenLayers.Feature.Vector.style['default']);
+
+      function style_osm_feature(feature) {
+    	  feature.style = OpenLayers.Util.extend({'fill':'black'}, 
+    	    OpenLayers.Feature.Vector.style['default']);
+    	  if (feature.attributes.highway == "motorway") {
+    	    feature.style.strokeColor = "blue";
+    	    feature.style.strokeWidth = 5;
+    	  } else if (feature.attributes.highway == "primary") {
+    	    feature.style.strokeColor = "red";
+    	  } else if (feature.attributes.highway == "secondary") {
+    	    feature.style.strokeColor = "orange";
+    	  } else if (feature.attributes.highway) {
+    	    feature.style.strokeColor = "black";
+      	  }
+      }
+
+      function init(){           
+        
+        // Start position for the map (hardcoded here for simplicity,
+    		// but maybe you want to get from URL params)
+    		var lat=31.4
+    		var lon=34.4
+    		var zoom=10
+
+    		var map; //complex object of type OpenLayers.Map
+
+    		
+        // these should be object methods or something
+          parser = new OpenLayers.Format.WKT();
+          OpenLayers.ProxyHost = "proxy.cgi?url=";
+ 	        OpenLayers.Feature.Vector.style['default'].strokeWidth = 2;
+          OpenLayers.Feature.Vector.style['default'].cursor = 'pointer';
+
+            //           map = new OpenLayers.Map($('map'), 
+            //           {projection:"EPSG: 4326",
+            // 'maxResolution': 360/512/16, 
+            // 'numZoomLevels':15, 
+            // 'controls': [],
+            // units: "m"});
+
+            map = new OpenLayers.Map($('map'), {
+              maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
+							maxResolution: 156543.0399,
+      				numZoomLevels: 19,
+      				units: 'm',
+      				projection: new OpenLayers.Projection("EPSG:900913"),
+      				displayProjection: new OpenLayers.Projection("EPSG:4326"),
+      				'controls': [ new OpenLayers.Control.Navigation(),
+                  					new OpenLayers.Control.PanZoomBar(),
+                  					new OpenLayers.Control.KeyboardDefaults(),
+                  					new OpenLayers.Control.MouseDefaults(),
+                  					new OpenLayers.Control.LayerSwitcher(),  
+                  					new OpenLayers.Control.Permalink(),
+                  					new OpenLayers.Control.MousePosition(),
+                  					new OpenLayers.Control.Attribution() ]
+      			} );
+      			
+          map.addControl(new OpenLayers.Control.LayerSwitcher());
+
+          var osmarender = new OpenLayers.Layer.OSM.Osmarender("Osmarender");
+          map.addLayer(osmarender);
+
+    			var layerMapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik");
+    			map.addLayer(layerMapnik);
+                                            
+    			var lonLat = new OpenLayers.LonLat(lon, lat).transform(new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject());
+    			map.setCenter (lonLat, zoom);
+
+                      
+          // create layers for start, stop, results
+          start = new OpenLayers.Layer.Vector("Start point", {style: start_style});
+          stop = new OpenLayers.Layer.Vector("End point", {style: stop_style});
+          result = new OpenLayers.Layer.Vector("Routing results"); 
+          map.addLayers([start, stop, result]);                                     
+          controls = {
+            start: new OpenLayers.Control.DrawFeature(start, SinglePoint),
+            stop: new OpenLayers.Control.DrawFeature(stop, SinglePoint, 
+                {callbacks:{'move': compute}} )
           }
-          return true;
-        }    
+          for (var key in controls) {
+            map.addControl(controls[key]);
+          }
       }
-    );
-     
-    var start_style = {
-      externalGraphic: "images/start.png",
-      graphicWidth: 18,
-      graphicHeight: 26,
-      graphicYOffset: -26,
-      graphicOpacity: 1
-    }
-    OpenLayers.Util.applyDefaults(start_style, OpenLayers.Feature.Vector.style['default']);
 
-    var stop_style = {
-      externalGraphic: "images/stop.png",
-      graphicWidth: 18,
-      graphicHeight: 26,
-      graphicYOffset: -26,
-      graphicOpacity: 1
-    }
-    OpenLayers.Util.applyDefaults(stop_style, OpenLayers.Feature.Vector.style['default']);
-
-    var result_style = {
-      strokeWidth: 3,
-      strokeColor: "#ff0000",
-      fillOpacity: 0
-    }; 
-    OpenLayers.Util.applyDefaults(result_style, OpenLayers.Feature.Vector.style['default']);
-
-    // Not used
-    function style_osm_feature(feature) {
-      feature.style = OpenLayers.Util.extend({'fill':'black'}, 
-        OpenLayers.Feature.Vector.style['default']);
-
-      if (feature.attributes.highway == "motorway") {
-        feature.style.strokeColor = "blue";
-        feature.style.strokeWidth = 5;
-      } else if (feature.attributes.highway == "primary") {
-        feature.style.strokeColor = "red";
-      } else if (feature.attributes.highway == "secondary") {
-        feature.style.strokeColor = "orange";
-      } else if (feature.attributes.highway) {
-        feature.style.strokeColor = "black";
+      function displayRoute(response) {
+          if (response && response.responseText) {
+              // erase the previous results
+              result.removeFeatures(result.features);
+              var g = new OpenLayers.Format.GeoJSON();
+              result.addFeatures(g.read(response.responseText));
+          }
+          $("status").innerHTML = "Loaded.";
+          active = false;
+          // if (stopPoint.geometry != end_geometry) {
+          //     compute(end_geometry);
+          // }    
       }
-    }
 
-    function init() {           
-      // Start position for the map (hardcoded here for simplicity,
-      // but maybe you want to get from URL params)
-      var lat=31.4
-      var lon=34.4
-      var zoom=10
-
-      var map; //complex object of type OpenLayers.Map
-
-      // these should be object methods or something
-      parser = new OpenLayers.Format.WKT();
-      OpenLayers.ProxyHost = "proxy.cgi?url=";
-      OpenLayers.Feature.Vector.style['default'].strokeWidth = 2;
-      OpenLayers.Feature.Vector.style['default'].cursor = 'pointer';
-
-      //map = new OpenLayers.Map($('map'), 
-      //  {projection:"EPSG: 4326",
-      //  'maxResolution': 360/512/16, 
-      //  'numZoomLevels':15, 
-      //  'controls': [],
-      //  units: "m"});
-
-      map = new OpenLayers.Map($('map'), {
-          maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
-          maxResolution: 156543.0399,
-          numZoomLevels: 19,
-          units: 'm',
-          projection: new OpenLayers.Projection("EPSG:900913"),
-          displayProjection: new OpenLayers.Projection("EPSG:4326"),
-          'controls': [ new OpenLayers.Control.Navigation(),
-                        new OpenLayers.Control.PanZoomBar(),
-                        new OpenLayers.Control.KeyboardDefaults(),
-                        new OpenLayers.Control.MouseDefaults(),
-                        new OpenLayers.Control.LayerSwitcher(),  
-                        new OpenLayers.Control.Permalink(),
-                        new OpenLayers.Control.MousePosition(),
-                        new OpenLayers.Control.Attribution() ]
-        } 
-      );
-
-      map.addControl(new OpenLayers.Control.LayerSwitcher());
-
-      var osmarender = new OpenLayers.Layer.OSM.Osmarender("Osmarender");
-      map.addLayer(osmarender);
-
-      var layerMapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik");
-      map.addLayer(layerMapnik);
-                                
-      var lonLat = new OpenLayers.LonLat(lon, lat).transform(
-        new OpenLayers.Projection("EPSG:4326"), map.getProjectionObject()
-      );
-      
-      map.setCenter (lonLat, zoom);
-          
-      // create layers for start, stop, results
-      start = new OpenLayers.Layer.Vector("Start point", {style: start_style});
-      stop = new OpenLayers.Layer.Vector("End point", {style: stop_style});
-      result = new OpenLayers.Layer.Vector("Routing results", {style: result_style}); 
-      map.addLayers([start, stop, result]);                                     
-      controls = {
-        start: new OpenLayers.Control.DrawFeature(start, SinglePoint),
-        stop: new OpenLayers.Control.DrawFeature(stop, SinglePoint, 
-            {callbacks:{'move': compute}} )
-      }
-      for (var key in controls) {
-        map.addControl(controls[key]);
-      }
-    }
-
-    function displayRoute(response) {
-      if (response && response.responseText) {
-        // erase the previous results
-        result.removeFeatures(result.features);
-        var g = new OpenLayers.Format.GeoJSON();
-        result.addFeatures(g.read(response.responseText));
+      function toggleControl(element) {
+          for (key in controls) {
+              if (element.value == key && element.checked) {
+                  controls[key].activate();
+              } else {
+                  controls[key].deactivate();
+              }
+          }
       }
       
-      $("status").innerHTML = "Loaded.";
-      active = false;
-      //if (stopPoint.geometry != end_geometry) {
-      //     compute(end_geometry);
-      //}    
-    }
-
-    function toggleControl(element) {
-      for (key in controls) {
-        if (element.value == key && element.checked) {
-          controls[key].activate();
-        } else {
-          controls[key].deactivate();
-        }
-      }
-    }
-      
-    function compute(geometry) {
-      if (active) { end_geometry = geometry; }
-      if (!start.features.length || (!stop.features.length && !geometry) || active) { return; } 
-      $("status").innerHTML = "Loading...";
-      active = true; 
-      var startPoint = start.features[0];
-      stopPoint = geometry ?  new OpenLayers.Feature.Vector(geometry) : stop.features[0];   
+      function compute(geometry) {
+          if (active) { end_geometry = geometry; }
+          if (!start.features.length || (!stop.features.length && !geometry) || active) { return; } 
+          $("status").innerHTML = "Loading...";
+          active = true; 
+          var startPoint = start.features[0];
+          stopPoint = geometry ?  new OpenLayers.Feature.Vector(geometry) : stop.features[0];   
 
       // Transform coords from projected to 4326:
-      var start_lonLat = new OpenLayers.LonLat(startPoint.geometry.x, startPoint.geometry.y).transform(
-      new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+			var start_lonLat = new OpenLayers.LonLat(startPoint.geometry.x, startPoint.geometry.y).transform(
+			    new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+      
+			var end_lonLat = new OpenLayers.LonLat(stopPoint.geometry.x, stopPoint.geometry.y).transform(
+			    new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+          
+          var g = new OpenLayers.Format.GeoJSON();
+          var result = {    
+              startpoint: start_lonLat.lon + ' ' + start_lonLat.lat,
+              finalpoint: end_lonLat.lon + ' ' + end_lonLat.lat,              
+              method: OpenLayers.Util.getElement('method').value
+          };
+	        var url = "?"+OpenLayers.Util.getParameterString(result);
+          // alert(url);
+          OpenLayers.loadURL("routing/route", 
+	  		     url,
+             null,
+             displayRoute);
+      }
 
-      var end_lonLat = new OpenLayers.LonLat(stopPoint.geometry.x, stopPoint.geometry.y).transform(
-      new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
-
-      var g = new OpenLayers.Format.GeoJSON();
-      var result = {    
-        startpoint: start_lonLat.lon + ' ' + start_lonLat.lat,
-        finalpoint: end_lonLat.lon + ' ' + end_lonLat.lat,              
-        method: OpenLayers.Util.getElement('method').value
-      };
-      var url = "?"+OpenLayers.Util.getParameterString(result);
-      // alert(url);
-      OpenLayers.loadURL("routing/route", 
-         url,
-         null,
-         displayRoute);
-    }
-    
   </script>
 </head>
 
