@@ -41,37 +41,30 @@
       }
     );
      
-    var start_style = OpenLayers.Util.applyDefaults(
-       {
-         externalGraphic: "images/start.png",
-         graphicWidth: 18,
-         graphicHeight: 26,
-         graphicYOffset: -26,
-         graphicOpacity: 1
-       }, 
-       OpenLayers.Feature.Vector.style['default']
-    );
+    var start_style = {
+      externalGraphic: "images/start.png",
+      graphicWidth: 18,
+      graphicHeight: 26,
+      graphicYOffset: -26,
+      graphicOpacity: 1
+    }
+    OpenLayers.Util.applyDefaults(start_style, OpenLayers.Feature.Vector.style['default']);
 
-    var stop_style = OpenLayers.Util.applyDefaults(
-      {
-         externalGraphic: "images/stop.png",
-         graphicWidth: 18,
-         graphicHeight: 26,
-         graphicYOffset: -26,
-         graphicOpacity: 1
-       }, 
-       OpenLayers.Feature.Vector.style['default']
-    );
+    var stop_style = {
+      externalGraphic: "images/stop.png",
+      graphicWidth: 18,
+      graphicHeight: 26,
+      graphicYOffset: -26,
+      graphicOpacity: 1
+    }
+    OpenLayers.Util.applyDefaults(stop_style, OpenLayers.Feature.Vector.style['default']);
 
-    var result_style = OpenLayers.Util.applyDefaults(
-      {
-        strokeWidth: 3,
-        strokeColor: "#ff0000",
-        fillOpacity: 0
-      }, 
-      OpenLayers.Feature.Vector.style['default']
-    );
-        
+    var result_style = {
+      strokeWidth: 3,
+      strokeColor: "#ff0000",
+      fillOpacity: 0
+    }; 
+    OpenLayers.Util.applyDefaults(result_style, OpenLayers.Feature.Vector.style['default']);
 
     // Not used
     function style_osm_feature(feature) 
