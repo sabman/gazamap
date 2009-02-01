@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <link rel="stylesheet" href="stylesheets/style.css" />
-  <script src="http://openlayers.org/api/2.7-rc2/OpenLayers.js"></script>
+  <script src="http://openlayers.org/api/OpenLayers.js"></script>
 	<!-- bring in the OpenStreetMap OpenLayers layers.
 		 Using this hosted file will make sure we are kept up
 		 to date with any necessary changes -->
@@ -125,7 +125,7 @@
           // create layers for start, stop, results
           start = new OpenLayers.Layer.Vector("Start point", {style: start_style});
           stop = new OpenLayers.Layer.Vector("End point", {style: stop_style});
-          result = new OpenLayers.Layer.Vector("Routing results"); 
+          result = new OpenLayers.Layer.Vector("Routing results", {style: result_style}); 
           map.addLayers([start, stop, result]);                                     
           controls = {
             start: new OpenLayers.Control.DrawFeature(start, SinglePoint),
