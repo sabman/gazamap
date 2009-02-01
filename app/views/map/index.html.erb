@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="stylesheets/style.css" />
   
   <!-- to always get the latest release of OpenLayers -->
-  <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+  <script src="http://openlayers.org/api/OpenLayers.js"></script>
   <!-- bring in the OpenStreetMap OpenLayers layers.
      Using this hosted file will make sure we are kept up
      to date with any necessary changes -->
@@ -18,17 +18,13 @@
     var map, layer, parser, result, end_geometry, stop_point, gml;
     var active = 0;
     
-    SinglePoint = OpenLayers.Class(OpenLayers.Handler.Point, 
-      {
-        createFeature: function(evt) 
-        {
+    SinglePoint = OpenLayers.Class(OpenLayers.Handler.Point, {
+        createFeature: function(evt) {
           this.control.layer.removeFeatures(this.control.layer.features);
           OpenLayers.Handler.Point.prototype.createFeature.apply(this, arguments);
         },
-        mousemove: function(evt) 
-        {
-          if(this.drawing) 
-          {
+        mousemove: function(evt) {
+          if(this.drawing) {
             this.callback("move", [this.point.geometry]);
             var lonlat = this.map.getLonLatFromPixel(evt.xy);
             this.point.geometry.x = lonlat.lon;
@@ -67,33 +63,23 @@
     OpenLayers.Util.applyDefaults(result_style, OpenLayers.Feature.Vector.style['default']);
 
     // Not used
-    function style_osm_feature(feature) 
-    {
+    function style_osm_feature(feature) {
       feature.style = OpenLayers.Util.extend({'fill':'black'}, 
-        OpenLayers.Feature.Vector.style['default']
-      );
+        OpenLayers.Feature.Vector.style['default']);
 
-      if (feature.attributes.highway == "motorway") 
-      {
+      if (feature.attributes.highway == "motorway") {
         feature.style.strokeColor = "blue";
         feature.style.strokeWidth = 5;
-      } 
-      else if (feature.attributes.highway == "primary") 
-      {
+      } else if (feature.attributes.highway == "primary") {
         feature.style.strokeColor = "red";
-      } 
-      else if (feature.attributes.highway == "secondary") 
-      {
+      } else if (feature.attributes.highway == "secondary") {
         feature.style.strokeColor = "orange";
-      } 
-      else if (feature.attributes.highway) 
-      {
+      } else if (feature.attributes.highway) {
         feature.style.strokeColor = "black";
       }
     }
 
-    function init()
-    {           
+    function init() {           
       // Start position for the map (hardcoded here for simplicity,
       // but maybe you want to get from URL params)
       var lat=31.4
@@ -115,8 +101,7 @@
       //  'controls': [],
       //  units: "m"});
 
-      map = new OpenLayers.Map($('map'), 
-        {
+      map = new OpenLayers.Map($('map'), {
           maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
           maxResolution: 156543.0399,
           numZoomLevels: 19,
@@ -163,10 +148,8 @@
       }
     }
 
-    function displayRoute(response) 
-    {
-      if (response && response.responseText) 
-      {
+    function displayRoute(response) {
+      if (response && response.responseText) {
         // erase the previous results
         result.removeFeatures(result.features);
         var g = new OpenLayers.Format.GeoJSON();
@@ -180,8 +163,7 @@
       //}    
     }
 
-    function toggleControl(element) 
-    {
+    function toggleControl(element) {
       for (key in controls) {
         if (element.value == key && element.checked) {
           controls[key].activate();
@@ -191,8 +173,7 @@
       }
     }
       
-    function compute(geometry) 
-    {
+    function compute(geometry) {
       if (active) { end_geometry = geometry; }
       if (!start.features.length || (!stop.features.length && !geometry) || active) { return; } 
       $("status").innerHTML = "Loading...";
@@ -218,9 +199,9 @@
       OpenLayers.loadURL("routing/route", 
          url,
          null,
-         displayRoute
-      );
+         displayRoute);
     }
+    
   </script>
 </head>
 
